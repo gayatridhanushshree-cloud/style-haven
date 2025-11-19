@@ -7,14 +7,18 @@ import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useWishlist } from "@/hooks/useWishlist";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const product = products.find((p) => p.id === Number(id));
+  const { isInWishlist, toggleWishlist } = useWishlist();
   
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
+
+  const inWishlist = product ? isInWishlist(product.id) : false;
 
   if (!product) {
     return (
@@ -39,6 +43,13 @@ const ProductDetail = () => {
       return;
     }
     toast.success("Added to cart!");
+  };
+
+  const handleWishlistClick = () => {
+    if (product) {
+      toggleWishlist(product);
+      toast.success(inWishlist ? "Removed from wishlist" : "Added to wishlist");
+    }
   };
 
   return (
@@ -160,8 +171,12 @@ const ProductDetail = () => {
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
               </Button>
-              <Button size="lg" variant="outline">
-                <Heart className="h-5 w-5" />
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={handleWishlistClick}
+              >
+                <Heart className={`h-5 w-5 ${inWishlist ? "fill-accent text-accent" : ""}`} />
               </Button>
             </div>
             
