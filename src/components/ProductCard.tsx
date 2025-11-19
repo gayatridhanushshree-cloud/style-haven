@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { Heart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useWishlist } from "@/hooks/useWishlist";
+import { products } from "@/data/products";
+import { toast } from "sonner";
 
 interface ProductCardProps {
   id: number;
@@ -13,6 +16,18 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ id, name, price, image, rating, category }: ProductCardProps) => {
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const product = products.find((p) => p.id === id);
+  const inWishlist = isInWishlist(id);
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (product) {
+      toggleWishlist(product);
+      toast.success(inWishlist ? "Removed from wishlist" : "Added to wishlist");
+    }
+  };
+
   return (
     <Card className="group overflow-hidden border-border hover:shadow-elegant transition-smooth">
       <Link to={`/product/${id}`}>
@@ -26,12 +41,9 @@ const ProductCard = ({ id, name, price, image, rating, category }: ProductCardPr
             variant="ghost"
             size="icon"
             className="absolute top-2 right-2 bg-background/80 hover:bg-background"
-            onClick={(e) => {
-              e.preventDefault();
-              // Wishlist functionality
-            }}
+            onClick={handleWishlistClick}
           >
-            <Heart className="h-4 w-4" />
+            <Heart className={`h-4 w-4 ${inWishlist ? "fill-accent text-accent" : ""}`} />
           </Button>
         </div>
       </Link>
