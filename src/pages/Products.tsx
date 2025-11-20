@@ -18,8 +18,9 @@ import {
 const Products = () => {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
+  const searchParam = searchParams.get("search");
   
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParam || "");
   const [selectedCategory, setSelectedCategory] = useState(categoryParam || "all");
   const [sortBy, setSortBy] = useState("newest");
   
@@ -47,7 +48,10 @@ const Products = () => {
     if (categoryParam) {
       setSelectedCategory(categoryParam);
     }
-  }, [categoryParam]);
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [categoryParam, searchParam]);
 
   return (
     <div className="min-h-screen flex flex-col">
