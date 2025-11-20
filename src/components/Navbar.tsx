@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Search, Menu, User, Heart } from "lucide-react";
+import { ShoppingCart, Menu, User, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
+import SearchBar from "@/components/SearchBar";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,9 +42,7 @@ const Navbar = () => {
 
           {/* Right Actions */}
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="hidden md:flex">
-              <Search className="h-5 w-5" />
-            </Button>
+            <SearchBar />
             <Link to="/wishlist">
               <Button variant="ghost" size="icon" className="relative">
                 <Heart className="h-5 w-5" />
