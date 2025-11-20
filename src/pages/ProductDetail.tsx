@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
-import { Star, Heart, ShoppingCart, Truck, RotateCcw } from "lucide-react";
+import { Star, Heart, ShoppingCart, Truck, RotateCcw, Minus, Plus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { products } from "@/data/products";
@@ -8,17 +8,24 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useWishlist } from "@/hooks/useWishlist";
+import { useCart } from "@/hooks/useCart";
+import ProductCard from "@/components/ProductCard";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const product = products.find((p) => p.id === Number(id));
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
   
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
 
   const inWishlist = product ? isInWishlist(product.id) : false;
+
+  const relatedProducts = products.filter(
+    (p) => p.category === product?.category && p.id !== product?.id
+  ).slice(0, 4);
 
   if (!product) {
     return (
@@ -38,11 +45,17 @@ const ProductDetail = () => {
   }
 
   const handleAddToCart = () => {
-    if (!selectedSize || !selectedColor) {
-      toast.error("Please select size and color");
+    if (product.sizes.length > 0 && !selectedSize) {
+      toast.error("Please select a size");
       return;
     }
-    toast.success("Added to cart!");
+    if (product.colors.length > 0 && !selectedColor) {
+      toast.error("Please select a color");
+      return;
+    }
+    
+    addToCart(product, quantity, selectedSize, selectedColor);
+    toast.success(`${product.name} added to cart!`);
   };
 
   const handleWishlistClick = () => {
@@ -51,6 +64,9 @@ const ProductDetail = () => {
       toast.success(inWishlist ? "Removed from wishlist" : "Added to wishlist");
     }
   };
+
+  const incrementQuantity = () => setQuantity((prev) => prev + 1);
+  const decrementQuantity = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -106,89 +122,97 @@ const ProductDetail = () => {
             <Separator className="mb-6" />
             
             {/* Size Selection */}
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3">Select Size</h3>
-              <div className="flex gap-2 flex-wrap">
-                {product.sizes.map((size) => (
-                  <Button
-                    key={size}
-                    variant={selectedSize === size ? "default" : "outline"}
-                    className={selectedSize === size ? "bg-accent hover:bg-accent/90" : ""}
-                    onClick={() => setSelectedSize(size)}
-                  >
-                    {size}
-                  </Button>
-                ))}
+            {product.sizes.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Select Size</h3>
+                <div className="flex gap-2 flex-wrap">
+                  {product.sizes.map((size) => (
+                    <Button
+                      key={size}
+                      variant={selectedSize === size ? "default" : "outline"}
+                      onClick={() => setSelectedSize(size)}
+                      className={selectedSize === size ? "bg-accent hover:bg-accent/90" : ""}
+                    >
+                      {size}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             
             {/* Color Selection */}
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3">Select Color</h3>
-              <div className="flex gap-2 flex-wrap">
-                {product.colors.map((color) => (
-                  <Button
-                    key={color}
-                    variant={selectedColor === color ? "default" : "outline"}
-                    className={selectedColor === color ? "bg-accent hover:bg-accent/90" : ""}
-                    onClick={() => setSelectedColor(color)}
-                  >
-                    {color}
-                  </Button>
-                ))}
+            {product.colors.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Select Color</h3>
+                <div className="flex gap-2 flex-wrap">
+                  {product.colors.map((color) => (
+                    <Button
+                      key={color}
+                      variant={selectedColor === color ? "default" : "outline"}
+                      onClick={() => setSelectedColor(color)}
+                      className={selectedColor === color ? "bg-accent hover:bg-accent/90" : ""}
+                    >
+                      {color}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
-            
-            {/* Quantity */}
-            <div className="mb-8">
+            )}
+
+            {/* Quantity Selector */}
+            <div className="mb-6">
               <h3 className="font-semibold mb-3">Quantity</h3>
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  onClick={decrementQuantity}
+                  disabled={quantity <= 1}
                 >
-                  -
+                  <Minus className="h-4 w-4" />
                 </Button>
-                <span className="text-lg font-medium w-12 text-center">{quantity}</span>
+                <span className="font-medium w-12 text-center text-lg">{quantity}</span>
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={incrementQuantity}
                 >
-                  +
+                  <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
             
-            {/* Actions */}
+            {/* Action Buttons */}
             <div className="flex gap-4 mb-8">
-              <Button
+              <Button 
+                className="flex-1 bg-accent hover:bg-accent/90" 
                 size="lg"
-                className="flex-1 bg-accent hover:bg-accent/90"
                 onClick={handleAddToCart}
               >
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 Add to Cart
               </Button>
-              <Button 
-                size="lg" 
+              <Button
                 variant="outline"
+                size="lg"
                 onClick={handleWishlistClick}
+                className={inWishlist ? "border-accent" : ""}
               >
-                <Heart className={`h-5 w-5 ${inWishlist ? "fill-accent text-accent" : ""}`} />
+                <Heart
+                  className={`h-5 w-5 ${inWishlist ? "fill-accent text-accent" : ""}`}
+                />
               </Button>
             </div>
             
-            {/* Additional Info */}
-            <div className="space-y-4 text-sm">
-              <div className="flex items-center gap-3">
-                <Truck className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">Free shipping on orders over $100</span>
+            {/* Features */}
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center gap-3 text-sm">
+                <Truck className="h-5 w-5 text-accent" />
+                <span>Free shipping on orders over $100</span>
               </div>
-              <div className="flex items-center gap-3">
-                <RotateCcw className="h-5 w-5 text-muted-foreground" />
-                <span className="text-muted-foreground">30-day return policy</span>
+              <div className="flex items-center gap-3 text-sm">
+                <RotateCcw className="h-5 w-5 text-accent" />
+                <span>30-day return policy</span>
               </div>
             </div>
           </div>
@@ -198,10 +222,14 @@ const ProductDetail = () => {
         {product.reviews.length > 0 && (
           <div className="mt-16">
             <h2 className="text-3xl font-display font-bold mb-8">Customer Reviews</h2>
-            <div className="space-y-6">
+            <div className="grid gap-6">
               {product.reviews.map((review) => (
-                <div key={review.id} className="bg-card border border-border rounded-lg p-6">
-                  <div className="flex items-center gap-2 mb-2">
+                <div key={review.id} className="bg-card border border-border rounded-lg p-6 shadow-elegant">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="font-semibold">{review.author}</p>
+                      <p className="text-sm text-muted-foreground">{review.date}</p>
+                    </div>
                     <div className="flex">
                       {[...Array(5)].map((_, i) => (
                         <Star
@@ -212,11 +240,21 @@ const ProductDetail = () => {
                         />
                       ))}
                     </div>
-                    <span className="font-semibold">{review.author}</span>
-                    <span className="text-sm text-muted-foreground">{review.date}</span>
                   </div>
                   <p className="text-muted-foreground">{review.comment}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-3xl font-display font-bold mb-8">You May Also Like</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard key={relatedProduct.id} {...relatedProduct} />
               ))}
             </div>
           </div>

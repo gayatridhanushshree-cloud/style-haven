@@ -1,19 +1,30 @@
 import { Link } from "react-router-dom";
-import { Trash2, ShoppingBag } from "lucide-react";
+import { Trash2, ShoppingBag, Plus, Minus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useCart } from "@/hooks/useCart";
+import { toast } from "sonner";
 
 const Cart = () => {
-  // Mock empty cart - in real app would use state management
-  const cartItems: any[] = [];
+  const { cart, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
 
-  const subtotal = 0;
-  const shipping = 0;
+  const subtotal = getCartTotal();
+  const shipping = subtotal > 0 ? (subtotal > 100 ? 0 : 10) : 0;
   const total = subtotal + shipping;
 
-  if (cartItems.length === 0) {
+  const handleRemoveItem = (productId: number, productName: string) => {
+    removeFromCart(productId);
+    toast.success(`${productName} removed from cart`);
+  };
+
+  const handleClearCart = () => {
+    clearCart();
+    toast.success("Cart cleared");
+  };
+
+  if (cart.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -41,42 +52,77 @@ const Cart = () => {
       <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-display font-bold mb-8">Shopping Cart</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-display font-bold">Shopping Cart</h1>
+          <Button
+            variant="outline"
+            onClick={handleClearCart}
+            className="text-destructive hover:text-destructive"
+          >
+            Clear Cart
+          </Button>
+        </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {cartItems.map((item) => (
-              <div key={item.id} className="bg-card border border-border rounded-lg p-6 shadow-elegant">
+            {cart.map((item) => (
+              <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="bg-card border border-border rounded-lg p-6 shadow-elegant">
                 <div className="flex gap-6">
-                  <div className="w-24 h-24 bg-secondary rounded-lg overflow-hidden flex-shrink-0">
+                  <Link to={`/product/${item.id}`} className="w-24 h-24 bg-secondary rounded-lg overflow-hidden flex-shrink-0">
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform"
                     />
-                  </div>
+                  </Link>
                   
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="font-semibold text-lg">{item.name}</h3>
+                        <Link to={`/product/${item.id}`}>
+                          <h3 className="font-semibold text-lg hover:text-accent transition-smooth">
+                            {item.name}
+                          </h3>
+                        </Link>
                         <p className="text-sm text-muted-foreground">
-                          Size: {item.size} | Color: {item.color}
+                          {item.selectedSize && `Size: ${item.selectedSize}`}
+                          {item.selectedSize && item.selectedColor && " | "}
+                          {item.selectedColor && `Color: ${item.selectedColor}`}
                         </p>
                       </div>
-                      <Button variant="ghost" size="icon">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveItem(item.id, item.name)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                     
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-3">
-                        <Button variant="outline" size="icon">-</Button>
-                        <span className="font-medium w-8 text-center">{item.quantity}</span>
-                        <Button variant="outline" size="icon">+</Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          disabled={item.quantity <= 1}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="font-medium w-12 text-center">{item.quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <span className="text-lg font-semibold">${item.price}</span>
+                      <span className="text-lg font-semibold">
+                        ${(item.price * item.quantity).toFixed(2)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -96,21 +142,34 @@ const Cart = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium">${shipping.toFixed(2)}</span>
+                  <span className="font-medium">
+                    {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
+                  </span>
                 </div>
+                {subtotal < 100 && subtotal > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Add ${(100 - subtotal).toFixed(2)} more for free shipping!
+                  </p>
+                )}
+                
                 <Separator />
+                
                 <div className="flex justify-between text-lg">
                   <span className="font-semibold">Total</span>
                   <span className="font-bold">${total.toFixed(2)}</span>
                 </div>
               </div>
               
-              <Button className="w-full bg-accent hover:bg-accent/90" size="lg">
+              <Button
+                className="w-full bg-accent hover:bg-accent/90 mb-3"
+                size="lg"
+                onClick={() => toast.info("Checkout coming soon!")}
+              >
                 Proceed to Checkout
               </Button>
               
               <Link to="/products">
-                <Button variant="ghost" className="w-full mt-3">
+                <Button variant="outline" className="w-full" size="lg">
                   Continue Shopping
                 </Button>
               </Link>
